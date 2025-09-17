@@ -50,47 +50,6 @@ class VerifyOtpSerializer(serializers.Serializer):
         
         return data
     
-
-class LoginSerializer(serializers.Serializer):
-    mobile = serializers.CharField(max_length=15)
-
-    def validate(self, data):
-        mobile = data.get("mobile")
-        try:
-            user = CustomUser.objects.get(mobile=mobile)
-        except CustomUser.DoesNotExist:
-            raise serializers.ValidationError("User with this mobile does not exist")
-
-        if not user.is_verified:
-            raise serializers.ValidationError("User not verified. Please verify OTP first.")
-
-        data["user"] = user
-        return data
-
-
-class VerifyLoginOtpSerializer(serializers.Serializer):
-    mobile = serializers.CharField()
-    otp = serializers.CharField()
-
-    def validate(self, data):
-        mobile = data.get("mobile")
-        otp = data.get("otp")
-
-        try:
-            user = CustomUser.objects.get(mobile=mobile, otp=otp)
-        except CustomUser.DoesNotExist:
-            raise serializers.ValidationError("Invalid mobile or OTP")
-
-        if not user.is_verified:
-            raise serializers.ValidationError("User not verified yet.")
-
-        # clear OTP after successful login
-        user.otp = None
-        user.save()
-
-        data["user"] = user
-        return data
-
 class LoginSerializer(serializers.Serializer):
     mobile = serializers.CharField(max_length = 15)
 
