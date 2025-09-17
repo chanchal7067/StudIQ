@@ -6,5 +6,5 @@ urlpatterns = [
     path("signup/", signup, name = "signup"),
     path("verify_otp/",verify_otp, name = "verify_otp" ),
     path("login/", login, name = "login"),
-    path("verify_login_otp/", verify_login_otp, name = "verify_login_otp")
+    path("verify_login_otp/", verify_login_otp, name = "verify_login_otp"),
 ]
