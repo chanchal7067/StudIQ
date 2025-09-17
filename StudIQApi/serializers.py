@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import CustomUser
 import re
 import random
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(max_length = 100)
@@ -88,3 +90,43 @@ class VerifyLoginOtpSerializer(serializers.Serializer):
 
         data["user"] = user
         return data
+
+class LoginSerializer(serializers.Serializer):
+    mobile = serializers.CharField(max_length = 15)
+
+    def validate(self, data):
+        mobile = data.get("mobile")
+
+        try:
+            user = CustomUser.objects.get(mobile = mobile)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("User with this mobile does not exist")
+        
+        if not user.is_verified:
+            raise serializers.ValidationError("User not verified please verify otp first")
+        
+        data["user"] = user
+        return data
+    
+class VerifyLoginOtpSerializer(serializers.Serializer):
+    mobile = serializers.CharField()
+    otp = serializers.CharField()
+
+    def validate(self, data):
+        mobile = data.get("mobile")
+        otp = data.get("otp")
+
+        try:
+            user = CustomUser.objects.get(mobile = mobile, otp = otp)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("Invalid Mobile or Otp")
+        
+        if not user.is_verified:
+            raise serializers.ValidationError("User not verified yet")
+        
+        user.otp = None
+        user.save()
+
+        data["user"] = user
+        return data
+    
