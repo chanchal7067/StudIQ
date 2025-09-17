@@ -1,9 +1,10 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import SignupSerializer,VerifyOtpSerializer,LoginSerializer,VerifyLoginOtpSerializer
+from .serializers import SignupSerializer,VerifyOtpSerializer,LoginSerializer,VerifyLoginOtpSerializer, CompleteProfileSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 import random
+from .models import CustomUser
 
 @api_view(['POST'])
 def signup(request):
@@ -71,3 +72,22 @@ def verify_login_otp(request):
     
     return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
+@api_view(['GET','PUT'])
+def get_complete_profile_view_byid(request, user_id):
+    try:
+        user = CustomUser.objects.get(id = user_id)
+    except CustomUser.DoesNotExist:
+        return Response({"Error" : "User Not found"}, status = status.HTTP_404_NOT_FOUND)
+    
+
+    if request.method == "GET":
+        serializer = CompleteProfileSerializer(user)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    
+    elif request.method == "PUT":
+        serializer = CompleteProfileSerializer(user, data = request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        

@@ -89,3 +89,34 @@ class VerifyLoginOtpSerializer(serializers.Serializer):
         data["user"] = user
         return data
     
+class CompleteProfileSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    username = serializers.CharField(max_length = 100, required = False)
+    email = serializers.EmailField(required = False)
+    role = serializers.CharField(max_length = 10, required = False)
+
+    age = serializers.IntegerField(required = False, allow_null = True)
+    dob = serializers.DateField(required = False, allow_null = True)
+    father_name = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    from_state = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    from_city = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    to_state = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    to_city = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    permanent_address = serializers.CharField(required = False, allow_blank = True)
+    pincode = serializers.CharField(max_length = 10, required = False, allow_blank = True)
+    current_address = serializers.CharField(required = False, allow_blank = True)
+    hobbies = serializers.CharField(required = False, allow_blank = True)
+    bio = serializers.CharField(required = False, allow_blank = True)
+    interests = serializers.CharField(required = False, allow_blank = True)
+    skills = serializers.CharField(required = False, allow_blank = True)
+    profile_photo = serializers.ImageField(required = False, allow_null = True)
+
+    def update(self, instance, validated_data):
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+        return instance
+    
+    def create(self, validated_data):
+        return CustomUser.objects.create(**validated_data)
+    
