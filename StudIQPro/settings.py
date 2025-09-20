@@ -28,12 +28,11 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 REST_FRAMEWORK = {
-    
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'StudIQApi.authentication.CookieJWTAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    
-}    
+}
 
 
 # Application definition
@@ -55,6 +54,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'StudIQApi.middleware.JWTAuthenticationMiddleware',
+    'StudIQApi.middleware.RoleBasedAuthorizationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
