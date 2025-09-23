@@ -17,4 +17,6 @@ urlpatterns = [
     path("me/", get_current_user, name = "get_current_user"),
     path("me/update/", update_current_user, name = "update_current_user"),
     path("logout/", logout, name = "logout"),
+
+    
 ]
