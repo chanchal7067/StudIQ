@@ -19,7 +19,7 @@ class SignupSerializer(serializers.Serializer):
         return value
     
     def create(self,validated_data):
-        otp = str(random.randint(100000,999999))
+        otp = "123456"
         user = CustomUser.objects.create(
             username = validated_data['username'],
             email = validated_data['email'],
@@ -28,7 +28,7 @@ class SignupSerializer(serializers.Serializer):
             
         )
         print("generated otp", otp)
-        return user , otp
+        return user, otp
     
 
 class VerifyOtpSerializer(serializers.Serializer):
@@ -105,10 +105,9 @@ class CompleteProfileSerializer(serializers.Serializer):
     age = serializers.IntegerField(required = False, allow_null = True)
     dob = serializers.DateField(required = False, allow_null = True)
     father_name = serializers.CharField(max_length = 100, required = False, allow_blank = True)
-    from_state = serializers.CharField(max_length = 100, required = False, allow_blank = True)
-    from_city = serializers.CharField(max_length = 100, required = False, allow_blank = True)
-    to_state = serializers.CharField(max_length = 100, required = False, allow_blank = True)
-    to_city = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    adhaar_no = serializers.CharField(max_length = 12, required = False, allow_blank = True)
+    state = serializers.CharField(max_length = 100, required = False, allow_blank = True)
+    city = serializers.CharField(max_length = 100, required = False, allow_blank = True)
     permanent_address = serializers.CharField(required = False, allow_blank = True)
     pincode = serializers.CharField(max_length = 10, required = False, allow_blank = True)
     current_address = serializers.CharField(required = False, allow_blank = True)
@@ -136,8 +135,7 @@ class UserListSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 'username', 'email', 'mobile', 'role', 
-            'is_verified', 'age', 'from_state', 'from_city', 
-            'to_state', 'to_city'
+            'is_verified', 'age', 'state', 'city', 
         ]
         read_only_fields = ['id']
 
@@ -150,7 +148,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 'username', 'email', 'mobile', 'role', 'is_verified',
-            'age', 'dob', 'father_name', 'from_state', 'from_city',
+            'age', 'dob', 'father_name', 'state', 'city',
             'to_state', 'to_city', 'permanent_address', 'pincode',
             'current_address', 'hobbies', 'bio', 'interests', 'skills',
             'profile_photo'

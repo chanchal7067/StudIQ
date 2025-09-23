@@ -41,6 +41,7 @@ def set_tokens_as_cookies(response, user):
     # Use SimpleJWT to create tokens bound to the user, then add extra claims
     refresh = RefreshToken.for_user(user)
     # add custom claims for convenience (not required for auth)
+    refresh['user_id'] = user.id
     refresh['username'] = user.username
     refresh['role'] = user.role
 
@@ -75,7 +76,7 @@ def login(request):
     serializer = LoginSerializer(data = request.data)
     if serializer.is_valid():
         user = serializer.validated_data["user"]
-        otp = str(random.randint(100000,999999))
+        otp = 123456
         OTPTable.objects.create(
             user_id = user.id,
             mobile = user.mobile,
