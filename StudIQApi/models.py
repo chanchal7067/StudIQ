@@ -45,3 +45,20 @@ class OTPTable(models.Model):
 
     def __str__(self):
         return f"{self.user_id}---------{self.otp}"    
+    
+class Service(models.Model):
+    service_name = models.CharField(max_length=100)
+    service_description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.service_name
+
+
+class Feature(models.Model):
+    service = models.ForeignKey(Service, related_name="features", on_delete=models.CASCADE)
+    feature_title = models.CharField(max_length=200)
+    feature_icon = models.CharField(max_length=50, blank=True, null=True)
+    feature_description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.feature_title    
