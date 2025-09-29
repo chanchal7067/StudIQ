@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, OTPTable , Feature, Service
+from .models import CustomUser, OTPTable , Service, Feature
 import re
 import random
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -155,9 +155,6 @@ class UserListSerializer(serializers.Serializer):
         instance.save()
         return instance
 
-
-
-
 class CurrentUserSerializer(serializers.Serializer):
     """
     Manual serializer for current user's complete information
@@ -225,55 +222,41 @@ class CurrentUserSerializer(serializers.Serializer):
         instance.save()
         return instance
     
-
-# --------- Feature Serializer ---------
 class FeatureSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    service_id = serializers.IntegerField()   # we accept service_id manually
-    feature_title = serializers.CharField(max_length=200)
-    feature_icon = serializers.CharField(max_length=50, required=False, allow_blank=True)
-    feature_description = serializers.CharField(required=False, allow_blank=True)
+    feature_id = serializers.IntegerField(read_only=True)
+    service = serializers.PrimaryKeyRelatedField(queryset=Service.objects.all())
+    feature_name = serializers.CharField(max_length=255)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
 
     def create(self, validated_data):
-        return Feature.objects.create(
-            service_id=validated_data["service_id"],
-            feature_title=validated_data["feature_title"],
-            feature_icon=validated_data.get("feature_icon", ""),
-            feature_description=validated_data.get("feature_description", "")
-        )
+        return Feature.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        instance.service_id = validated_data.get("service_id", instance.service_id)
-        instance.feature_title = validated_data.get("feature_title", instance.feature_title)
-        instance.feature_icon = validated_data.get("feature_icon", instance.feature_icon)
-        instance.feature_description = validated_data.get("feature_description", instance.feature_description)
+        instance.service = validated_data.get("service", instance.service)
+        instance.feature_name = validated_data.get("feature_name", instance.feature_name)
         instance.save()
         return instance
 
-
-# --------- Service Serializer ---------
 class ServiceSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
+    service_id = serializers.IntegerField(read_only=True)
     service_name = serializers.CharField(max_length=100)
-    service_description = serializers.CharField(required=False, allow_blank=True)
+    title = serializers.CharField(max_length=255)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+
+    features = FeatureSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
         return Service.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
         instance.service_name = validated_data.get("service_name", instance.service_name)
-        instance.service_description = validated_data.get("service_description", instance.service_description)
+        instance.title = validated_data.get("title", instance.title)
         instance.save()
         return instance
 
 
-# --------- Service Detail Serializer (with features) ---------
-class ServiceDetailSerializer(ServiceSerializer):
-    features = serializers.SerializerMethodField()
-
-    def get_features(self, obj):
-        features = Feature.objects.filter(service=obj)
-        return FeatureSerializer(features, many=True).data
 
 
 

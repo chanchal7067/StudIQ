@@ -47,18 +47,21 @@ class OTPTable(models.Model):
         return f"{self.user_id}---------{self.otp}"    
     
 class Service(models.Model):
-    service_name = models.CharField(max_length=100)
-    service_description = models.TextField(blank=True, null=True)
+    service_id = models.AutoField(primary_key=True)
+    service_name = models.CharField(max_length=100, unique=True)
+    title = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)   # auto set on insert
+    updated_at = models.DateTimeField(auto_now=True)       # auto set on update
 
     def __str__(self):
         return self.service_name
 
-
 class Feature(models.Model):
+    feature_id = models.AutoField(primary_key=True)
     service = models.ForeignKey(Service, related_name="features", on_delete=models.CASCADE)
-    feature_title = models.CharField(max_length=200)
-    feature_icon = models.CharField(max_length=50, blank=True, null=True)
-    feature_description = models.TextField(blank=True, null=True)
+    feature_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.feature_title    
+        return f"{self.service.service_name} → {self.feature_name}"      
