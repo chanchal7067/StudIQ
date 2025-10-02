@@ -3,9 +3,8 @@ from .views import (
     signup, verify_otp, login, verify_login_otp, 
     complete_profile, get_all_users, 
     get_current_user, update_current_user, logout,
-    add_feature,create_service,delete_feature,delete_service,
-    update_feature,get_all_services_with_features
-
+    service_list,create_service,service_detail,update_service,delete_service,
+    feature_list,add_feature,feature_detail,update_feature,delete_feature,get_all_services_with_features
 )
 
 urlpatterns = [
@@ -21,13 +20,19 @@ urlpatterns = [
     path("update-current-user/", update_current_user, name = "update_current_user"),
     path("logout/", logout, name = "logout"),
 
-    path("create_service/", create_service, name = "create_service"),
-    path("delete_service/<int:service_id>/", delete_service, name = "delete_service"),
-    path("add_feature/", add_feature, name = "add_feature"),
-    path("delete_feature/<int:feature_id>/", delete_feature, name = "delete_feature"),
-    path("update_feature/<int:feature_id>/", update_feature, name = "update_feature"),
-    path("get_all_services_with_features/", get_all_services_with_features, name = "get_all_services_with_features"),
+    # Service APIs
+    path('services/', service_list, name='service-list'),  # GET all services
+    path('services/create/', create_service, name='create-service'),  # POST (admin)
+    path('services/<int:service_id>/', service_detail, name='service-detail'),  # GET single
+    path('services/<int:service_id>/update/', update_service, name='update-service'),  # PUT (admin)
+    path('services/<int:service_id>/delete/', delete_service, name='delete-service'),  # DELETE (admin)
     
+    path('features/', feature_list, name='feature-list'),  # GET all
+    path('features/add/', add_feature, name='add-feature'),  # POST (admin)
+    path('features/<int:feature_id>/', feature_detail, name='feature-detail'),  # GET single
+    path('features/<int:feature_id>/update/', update_feature, name='update-feature'),  # PUT (admin)
+    path('features/<int:feature_id>/delete/', delete_feature, name='delete-feature'),  # DELETE (admin)
 
-    
+    # Services with features
+    path('services-features/', get_all_services_with_features, name='services-features'),
 ]

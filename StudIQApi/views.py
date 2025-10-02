@@ -10,6 +10,23 @@ import random
 from .models import CustomUser, OTPTable , Service, Feature
 
 from django.views.decorators.csrf import csrf_exempt
+from functools import wraps
+
+# -------------------- Decorators --------------------
+
+def admin_required(view_func):
+    """
+    Decorator to allow only users with role 'admin' to access the view.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        user = getattr(request, 'user', None)
+        if not user or not getattr(user, 'is_authenticated', False):
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+        if getattr(user, 'role', None) != 'admin':
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 
 @api_view(['POST'])
@@ -230,135 +247,116 @@ def logout(request):
     
     return response
 
-# ---------- Service APIs ----------
-@api_view(['GET', 'POST'])
-def service_list_create(request):
-    if request.method == 'GET':
-        services = Service.objects.all()
-        serializer = ServiceSerializer(services, many=True)
-        return Response(serializer.data)
+# -------------------- Service APIs --------------------
 
-    elif request.method == 'POST':
-        serializer = ServiceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+def service_list(request):
+    services = Service.objects.all()
+    serializer = ServiceSerializer(services, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def service_detail(request, pk):
+@api_view(['POST'])
+@admin_required
+def create_service(request):
+    serializer = ServiceSerializer(data=request.data)
+    if serializer.is_valid():
+        service = serializer.create(serializer.validated_data)
+        return Response({"message": "Service Created Successfully", "data": ServiceSerializer(service).data}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+@admin_required
+def update_service(request, service_id):
     try:
-        service = Service.objects.get(pk=pk)
+        service = Service.objects.get(pk=service_id)
+    except Service.DoesNotExist:
+        return Response({"error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
+    serializer = ServiceSerializer(service, data=request.data, partial=True)
+    if serializer.is_valid():
+        service = serializer.update(service, serializer.validated_data)
+        return Response({"message": "Service Updated Successfully", "data": ServiceSerializer(service).data}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@admin_required
+def delete_service(request, service_id):
+    try:
+        service = Service.objects.get(pk=service_id)
+        service.delete()
+        return Response({"message": "Service deleted successfully"}, status=status.HTTP_200_OK)
     except Service.DoesNotExist:
         return Response({"error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'GET':
-        serializer = ServiceDetailSerializer(service)
-        return Response(serializer.data)
 
-    elif request.method == 'PUT':
-        serializer = ServiceSerializer(service, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        service.delete()
-        return Response({"message": "Service deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-
-
-# ---------- Feature APIs ----------
-@api_view(['GET', 'POST'])
-def feature_list_create(request):
-    if request.method == 'GET':
-        features = Feature.objects.all()
-        serializer = FeatureSerializer(features, many=True)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        serializer = FeatureSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-def feature_detail(request, pk):
+@api_view(['GET'])
+def service_detail(request, service_id):
     try:
-        feature = Feature.objects.get(pk=pk)
-    except Feature.DoesNotExist:
-        return Response({"error": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
+        service = Service.objects.get(pk=service_id)
+    except Service.DoesNotExist:
+        return Response({"error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
+    serializer = ServiceSerializer(service)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
-    if request.method == 'GET':
-        serializer = FeatureSerializer(feature)
-        return Response(serializer.data)
 
-    elif request.method == 'PUT':
-        serializer = FeatureSerializer(feature, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# -------------------- Feature APIs --------------------
 
-    elif request.method == 'DELETE':
-        feature.delete()
-        return Response({"message": "Feature deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+@api_view(['GET'])
+def feature_list(request):
+    features = Feature.objects.all()
+    serializer = FeatureSerializer(features, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
-def create_service(request):
-    serializer = ServiceSerializer(data = request.data)
-    if serializer.is_valid():
-        service = serializer.create(serializer.validated_data)
-        response_serializer = ServiceSerializer(service)
-        return Response({"message" : "Service Created Successfully","data" : response_serializer.data}, status = status.HTTP_201_CREATED)
-    return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-@api_view(["DELETE"])
-def delete_service(request, service_id):
-    try:
-        service = Service.objects.get(pk = service_id)
-        service.delete()
-        return Response({"message" : "service deleted successfully"}, status = status.HTTP_200_OK)
-    except Service.DoesNotExist:
-        return Response({"error" : "service not found"}, status = status.HTTP_404_NOT_FOUND)
-    
-@api_view(["POST"])
+@admin_required
 def add_feature(request):
-    serializer = FeatureSerializer(data = request.data)
+    serializer = FeatureSerializer(data=request.data)
     if serializer.is_valid():
         feature = serializer.create(serializer.validated_data)
-        response_serializer = FeatureSerializer(feature)
-        return Response({"message" : "Feature added Successfully", "data" : response_serializer.data}, status = status.HTTP_201_CREATED)
-    return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Feature added Successfully", "data": FeatureSerializer(feature).data}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(["DELETE"])
-def delete_feature(request, feature_id):
-    try:
-        feature = Feature.objects.get(pk = feature_id)
-        feature.delete()
-        return Response({"message" : "feature deleted Successfully"}, status = status.HTTP_200_OK)
-    except Feature.DoesNotExist:
-        return Response({"error" : "Feature Not Found"}, status = status.HTTP_404_NOT_FOUND)
-    
-@api_view(["PUT"])
+
+@api_view(['PUT'])
+@admin_required
 def update_feature(request, feature_id):
     try:
-        feature = Feature.objects.get(pk = feature_id)
+        feature = Feature.objects.get(pk=feature_id)
     except Feature.DoesNotExist:
-        return Response({"error" : "feature not found"}, status = status.HTTP_404_NOT_FOUND)
-    
-    serializer = FeatureSerializer(feature, data = request.data, partial = True)
+        return Response({"error": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
+    serializer = FeatureSerializer(feature, data=request.data, partial=True)
     if serializer.is_valid():
-        updated_feature = serializer.update(feature, serializer.validated_data)
-        response_serializer = FeatureSerializer(updated_feature)
-        return Response({"message" : "Feature Updated Successfully", "data" : response_serializer.data}, status = status.HTTP_200_OK)
-    return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        feature = serializer.update(feature, serializer.validated_data)
+        return Response({"message": "Feature Updated Successfully", "data": FeatureSerializer(feature).data}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(["GET"])
+
+@api_view(['DELETE'])
+@admin_required
+def delete_feature(request, feature_id):
+    try:
+        feature = Feature.objects.get(pk=feature_id)
+        feature.delete()
+        return Response({"message": "Feature deleted Successfully"}, status=status.HTTP_200_OK)
+    except Feature.DoesNotExist:
+        return Response({"error": "Feature Not Found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def feature_detail(request, feature_id):
+    try:
+        feature = Feature.objects.get(pk=feature_id)
+    except Feature.DoesNotExist:
+        return Response({"error": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
+    serializer = FeatureSerializer(feature)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
 def get_all_services_with_features(request):
     services = Service.objects.all()
-    serializer = ServiceSerializer(services, many = True)
-    return Response({"services" : serializer.data}, status = status.HTTP_200_OK)
+    serializer = ServiceSerializer(services, many=True)
+    return Response({"services": serializer.data}, status=status.HTTP_200_OK)
