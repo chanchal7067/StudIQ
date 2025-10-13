@@ -10,17 +10,17 @@ from .views import (
 )
 
 urlpatterns = [
-    path("signup/", signup, name = "signup"),
-    path("verify_otp/",verify_otp, name = "verify_otp" ),
-    path("login/", login, name = "login"),
-    path("verify_login_otp/", verify_login_otp, name = "verify_login_otp"),
-    path("complete-profile/", complete_profile, name = "complete_profile"),
+    path("signup/", signup, name = "signup"), # POST
+    path("verify_otp/",verify_otp, name = "verify_otp" ), # POST
+    path("login/", login, name = "login"), # POST
+    path("verify_login_otp/", verify_login_otp, name = "verify_login_otp"), # POST
+    path("complete-profile/", complete_profile, name = "complete_profile"), # PUT
     
     # New endpoints for user management
-    path("users/", get_all_users, name = "get_all_users"),
-    path("get-current-user/", get_current_user, name = "get_current_user"),
-    path("update-current-user/", update_current_user, name = "update_current_user"),
-    path("logout/", logout, name = "logout"),
+    path("users/", get_all_users, name = "get_all_users"), # GET (admin)
+    path("get-current-user/", get_current_user, name = "get_current_user"), # GET (all)
+    path("update-current-user/", update_current_user, name = "update_current_user"), # PUT (all)
+    path("logout/", logout, name = "logout"), # POST (all)
 
     # Service APIs
     path('services/', service_list, name='service-list'),  # GET all services
@@ -36,7 +36,7 @@ urlpatterns = [
     path('features/<int:feature_id>/delete/', delete_feature, name='delete-feature'),  # DELETE (admin)
 
     # Services with features
-    path('services-features/', get_all_services_with_features, name='services-features'),
+    path('services-features/', get_all_services_with_features, name='services-features'), # GET all services with features
 
     # -------------------- Hostel Management --------------------
     path('create-hostel/', create_hostel, name='create_hostel'),  # POST (owner)
