@@ -150,8 +150,6 @@ def complete_profile(request):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 @api_view(['GET'])
 @RoleBasedAuthorizationMiddleware.require_authentication
 def get_all_users(request):

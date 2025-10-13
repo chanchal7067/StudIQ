@@ -32,7 +32,7 @@ class CustomUser(models.Model):
     bio = models.TextField(blank = True, null = True)
     interests = models.TextField(blank = True, null = True)
     skills = models.TextField(blank = True, null = True)
-    profile_photo = models.ImageField(upload_to = "profile_photo/", blank = True, null = True)
+    profile_photo = CloudinaryField('image', folder='profile_photo', blank=True, null=True)
 
     def __str__(self):
         return f"{self.username}-----------{self.role}"
