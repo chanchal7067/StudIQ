@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import cloudinary
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +35,15 @@ REST_FRAMEWORK = {
     ),
 }
 
+cloudinary.config( 
+  cloud_name = "dnicy6okt",
+  api_key = "322616978983831",
+  api_secret = "RJ5d6IGMfWBBFBXeFrq5WD-aEl4",
+  secure = True
+)
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
 
 # Application definition
 
@@ -45,6 +55,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'cloudinary',
+    'cloudinary_storage',
     'StudIQApi',
 ]
 

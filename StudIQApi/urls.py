@@ -4,7 +4,9 @@ from .views import (
     complete_profile, get_all_users, 
     get_current_user, update_current_user, logout,
     service_list,create_service,service_detail,update_service,delete_service,
-    feature_list,add_feature,feature_detail,update_feature,delete_feature,get_all_services_with_features
+    feature_list,add_feature,feature_detail,update_feature,delete_feature,get_all_services_with_features,
+    create_hostel,update_hostel_by_id,get_all_hostels,delete_hostel_by_id,approve_or_reject_hostel,change_status_by_id,
+    get_hostel_by_id,get_all_approved_hostels,upload_hostel_image,upload_hostel_video,
 )
 
 urlpatterns = [
@@ -35,4 +37,19 @@ urlpatterns = [
 
     # Services with features
     path('services-features/', get_all_services_with_features, name='services-features'),
+
+    # -------------------- Hostel Management --------------------
+    path('create-hostel/', create_hostel, name='create_hostel'),  # POST (owner)
+    path('update-hostel/<int:hostel_id>/', update_hostel_by_id, name='update_hostel_by_id'), # PUT (owner)
+    path('get-all-hostels/', get_all_hostels, name='get_all_hostels'), # GET (admin)
+    path('delete-hostel/<int:hostel_id>/', delete_hostel_by_id, name='delete_hostel_by_id'), # DELETE (admin)
+    path('approve-reject-hostel/<int:hostel_id>/', approve_or_reject_hostel, name='approve_or_reject_hostel'), # PUT (admin)
+    path('change-status/<int:hostel_id>/', change_status_by_id, name='change_status_by_id'), # PUT (owner/admin)
+    path('get-hostel-byid/<int:hostel_id>/', get_hostel_by_id, name='get_hostel_by_id'), # GET (all)
+    path('get-approved-hostels/', get_all_approved_hostels, name='get_all_approved_hostels'), # GET (all)
+
+    # -------------------- Hostel Media Upload --------------------
+    path('upload-image/<int:hostel_id>/', upload_hostel_image, name='upload_hostel_image'), # POST (owner)
+    path('upload-video/<int:hostel_id>/', upload_hostel_video, name='upload_hostel_video'), # POST (owner)
+
 ]

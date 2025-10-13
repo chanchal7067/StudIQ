@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, OTPTable , Service, Feature
+from .models import CustomUser, OTPTable , Service, Feature,Hostel,HostelPhoto
 import re
 import random
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -256,7 +256,30 @@ class ServiceSerializer(serializers.Serializer):
         instance.save()
         return instance
 
+class HostelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hostel
+        fields = "__all__"
 
+    def validate_contact_no(self, value):
+        value = value.strip().replace(" ", "")
+        if not value.isdigit() or len(value) < 10:
+            raise serializers.ValidationError("Contact number must be at least 10 digits.")
+        return value
 
+    def validate_pincode(self, value):
+        value = value.strip().replace(" ", "")
+        if not value.isdigit() or len(value) != 6:
+            raise serializers.ValidationError("Pincode must be exactly 6 digits.")
+        return value
 
-
+class HostelPhotoSerializer(serializers.ModelSerializer): 
+    class Meta:
+        model = HostelPhoto 
+        fields = ['id', 'hostel', 'file', 'is_banner', 'created_at', 'updated_at'] 
+    
+    def validate(self, data): 
+        file = data.get('file')
+        if not file: 
+            raise serializers.ValidationError("File is required for upload.") 
+        return data

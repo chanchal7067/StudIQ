@@ -2,12 +2,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from .serializers import SignupSerializer,VerifyOtpSerializer,LoginSerializer,VerifyLoginOtpSerializer, CompleteProfileSerializer, UserListSerializer, CurrentUserSerializer, ServiceSerializer, FeatureSerializer
+from .serializers import SignupSerializer,VerifyOtpSerializer,LoginSerializer,VerifyLoginOtpSerializer, CompleteProfileSerializer, UserListSerializer, CurrentUserSerializer, ServiceSerializer, FeatureSerializer, HostelSerializer, HostelPhotoSerializer
 from .middleware import RoleBasedAuthorizationMiddleware
 from django.http import JsonResponse
 from rest_framework_simplejwt.tokens import RefreshToken
 import random
-from .models import CustomUser, OTPTable , Service, Feature
+from .models import CustomUser, OTPTable , Service, Feature,Hostel
 
 from django.views.decorators.csrf import csrf_exempt
 from functools import wraps
@@ -360,3 +360,204 @@ def get_all_services_with_features(request):
     services = Service.objects.all()
     serializer = ServiceSerializer(services, many=True)
     return Response({"services": serializer.data}, status=status.HTTP_200_OK)
+
+
+# Hostel Services api
+@api_view(['POST'])
+@RoleBasedAuthorizationMiddleware.require_roles(['owner'])
+def create_hostel(request):
+    """
+    API for owner to create a new hostel.
+    """
+    serializer = HostelSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            "message": "Hostel created successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@RoleBasedAuthorizationMiddleware.require_roles(['owner'])
+def update_hostel_by_id(request, hostel_id):
+    """
+    API for owner to update a hostel by its ID.
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = HostelSerializer(hostel, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            "message": "Hostel updated successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@RoleBasedAuthorizationMiddleware.require_roles(['admin'])
+def get_all_hostels(request):
+    """
+    API for admin to view all hostels.
+    """
+    hostels = Hostel.objects.all().order_by('-created_at')
+    serializer = HostelSerializer(hostels, many=True)
+    return Response({
+        "message": "All hostels retrieved successfully",
+        "total": hostels.count(),
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+@RoleBasedAuthorizationMiddleware.require_roles(['admin'])
+def delete_hostel_by_id(request, hostel_id):
+    """
+    API for admin to delete a hostel by ID.
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+        hostel.delete()
+        return Response({"message": "Hostel deleted successfully"}, status=status.HTTP_200_OK)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['PUT'])
+@RoleBasedAuthorizationMiddleware.require_roles(['admin'])
+def approve_or_reject_hostel(request, hostel_id):
+    """
+    API for admin to approve or reject a hostel.
+    Expected body: { "action": "approve" } or { "action": "reject", "reason": "..." }
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    action = request.data.get('action')
+
+    if action == 'approve':
+        hostel.is_approved = True
+        hostel.is_rejected = False
+        hostel.rejected_reason = None
+        hostel.approved_by = request.user.username
+        hostel.save()
+        return Response({"message": "Hostel approved successfully"}, status=status.HTTP_200_OK)
+
+    elif action == 'reject':
+        reason = request.data.get('reason', 'No reason provided')
+        hostel.is_rejected = True
+        hostel.is_approved = False
+        hostel.rejected_reason = reason
+        hostel.approved_by = None
+        hostel.save()
+        return Response({
+            "message": "Hostel rejected successfully",
+            "reason": reason
+        }, status=status.HTTP_200_OK)
+
+    else:
+        return Response(
+            {"error": "Invalid action. Use 'approve' or 'reject'."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+@api_view(['PUT'])
+@RoleBasedAuthorizationMiddleware.require_roles(['admin', 'owner'])
+def change_status_by_id(request, hostel_id):
+    """
+    API to activate or deactivate a hostel (admin and owner allowed).
+    Expected body: { "status": true } or { "status": false }
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    status_value = request.data.get('status')
+    if status_value is None:
+        return Response({"error": "Status field (true/false) is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    hostel.is_active = bool(status_value)
+    hostel.save()
+    return Response({
+        "message": f"Hostel {'activated' if hostel.is_active else 'deactivated'} successfully",
+        "id": hostel.id,
+        "is_active": hostel.is_active
+    }, status=status.HTTP_200_OK)    
+
+@api_view(['GET'])
+@RoleBasedAuthorizationMiddleware.require_authentication
+def get_hostel_by_id(request, hostel_id):
+    """
+    API for all roles (admin, owner, user) to view hostel details.
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = HostelSerializer(hostel)
+    return Response({
+        "message": "Hostel details fetched successfully",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@RoleBasedAuthorizationMiddleware.require_authentication
+def get_all_approved_hostels(request):
+    """
+    API for all roles to get list of approved hostels.
+    """
+    hostels = Hostel.objects.filter(is_approved=True, is_active=True).order_by('-created_at')
+    serializer = HostelSerializer(hostels, many=True)
+    return Response({
+        "message": "Approved hostels fetched successfully",
+        "total": hostels.count(),
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@RoleBasedAuthorizationMiddleware.require_roles(['owner'])
+def upload_hostel_image(request, hostel_id):
+    """
+    API for owner to upload an image to a hostel (Cloudinary auto handles storage).
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = HostelPhotoSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(hostel=hostel)
+        return Response({
+            "message": "Image uploaded successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@RoleBasedAuthorizationMiddleware.require_roles(['owner'])
+def upload_hostel_video(request, hostel_id):
+    """
+    API for owner to upload a video to a hostel (Cloudinary auto detects type).
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = HostelPhotoSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(hostel=hostel)
+        return Response({
+            "message": "Video uploaded successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
