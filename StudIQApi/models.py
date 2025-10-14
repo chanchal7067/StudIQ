@@ -78,6 +78,8 @@ class Hostel(models.Model):
         ("Standard", "Standard"),
     ]
 
+    user = models.ForeignKey(CustomUser, on_delete = models.CASCADE, related_name = 'hostels')
+
     id = models.AutoField(primary_key = True)
     name = models.CharField(max_length = 255)
     tagline = models.CharField(max_length = 255, blank = True, null = True)

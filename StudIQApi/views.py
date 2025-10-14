@@ -366,10 +366,20 @@ def get_all_services_with_features(request):
 def create_hostel(request):
     """
     API for owner to create a new hostel.
+    The logged-in owner (from access token) is automatically assigned to the hostel.
     """
+
+    user = getattr(request, 'user', None)
+
+    if not user or not getattr(user, 'is_authenticated', False):
+        return Response(
+            {"error": "Authentication required"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
     serializer = HostelSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(user=user)
         return Response({
             "message": "Hostel created successfully",
             "data": serializer.data

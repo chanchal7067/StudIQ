@@ -257,9 +257,17 @@ class ServiceSerializer(serializers.Serializer):
         return instance
 
 class HostelSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
     class Meta:
         model = Hostel
         fields = "__all__"
+
+    def get_user(self, obj):
+        """Return username + id together as 'username (id)'."""
+        if obj.user:
+            return f"{obj.user.username} (ID: {obj.user.id})"
+        return None    
 
     def validate_contact_no(self, value):
         value = value.strip().replace(" ", "")
