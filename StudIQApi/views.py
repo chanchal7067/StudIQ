@@ -45,8 +45,7 @@ def signup(request):
             "status": "success",
             "message": "Signup successful! OTP sent to your mobile.",
             "user_id": user.id,
-            "mobile": user.mobile,
-            "otp": otp
+            "mobile": user.mobile
         }, status=status.HTTP_201_CREATED)
 
     # Return validation errors

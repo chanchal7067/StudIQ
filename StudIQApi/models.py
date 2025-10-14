@@ -16,7 +16,6 @@ class CustomUser(models.Model):
     email = models.EmailField(unique = True)
     mobile = models.CharField(max_length = 15, unique = True)
     role = models.CharField(max_length = 10, choices = ROLE_CHOICES, default = 'user')
-    otp = models.CharField(max_length = 6, blank = True, null = True)
     is_verified = models.BooleanField(default = False)
 
     age = models.IntegerField(blank = True, null = True)
