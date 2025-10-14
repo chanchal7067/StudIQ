@@ -115,17 +115,38 @@ class CompleteProfileSerializer(serializers.Serializer):
     bio = serializers.CharField(required = False, allow_blank = True)
     interests = serializers.CharField(required = False, allow_blank = True)
     skills = serializers.CharField(required = False, allow_blank = True)
-    profile_photo = serializers.ImageField(required = False, allow_null = True)
+    profile_photo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    def validate_profile_photo(self, value):
+        """
+        Accepts both string URLs or image file (base64 or path).
+        """
+        if isinstance(value, str):
+            # Accept URL or base64 string
+            return value
+        elif hasattr(value, 'name'):
+            # If it's a file object (e.g., uploaded image)
+            return value
+        return None
 
     def update(self, instance, validated_data):
+        """
+        Update existing user profile.
+        Handles both image file and string URLs for profile_photo.
+        """
+        profile_photo = validated_data.pop('profile_photo', None)
+
         for key, value in validated_data.items():
             setattr(instance, key, value)
+
+        if profile_photo:
+            instance.profile_photo = profile_photo  # can be URL string or image
+
         instance.save()
         return instance
-    
+
     def create(self, validated_data):
         return CustomUser.objects.create(**validated_data)
-
 
 class UserListSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only = True)

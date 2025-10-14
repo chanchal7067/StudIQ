@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     signup, verify_otp, login, verify_login_otp, 
     complete_profile, get_all_users, 
-    get_current_user, update_current_user, logout,
+    get_current_user, logout,
     service_list,create_service,service_detail,update_service,delete_service,
     feature_list,add_feature,feature_detail,update_feature,delete_feature,get_all_services_with_features,
     create_hostel,update_hostel_by_id,get_all_hostels,delete_hostel_by_id,approve_or_reject_hostel,change_status_by_id,
@@ -19,7 +19,6 @@ urlpatterns = [
     # New endpoints for user management
     path("users/", get_all_users, name = "get_all_users"), # GET (admin)
     path("get-current-user/", get_current_user, name = "get_current_user"), # GET (all)
-    path("update-current-user/", update_current_user, name = "update_current_user"), # PUT (all)
     path("logout/", logout, name = "logout"), # POST (all)
 
     # Service APIs
