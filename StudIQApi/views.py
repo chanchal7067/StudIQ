@@ -33,17 +33,27 @@ def admin_required(view_func):
 @permission_classes([AllowAny])
 @csrf_exempt
 def signup(request):
-    serializer = SignupSerializer(data = request.data)
+    serializer = SignupSerializer(data=request.data)
     if serializer.is_valid():
         user, otp = serializer.save()
         OTPTable.objects.create(
-            user_id = user.id,
-            mobile = user.mobile,
-            otp = otp
-
+            user_id=user.id,
+            mobile=user.mobile,
+            otp=otp
         )
-        return Response({"message" : "Signup Successfull Otp sent to your mobile", "user_id" : user.id, "mobile" : user.mobile, "otp" : otp}, status = status.HTTP_201_CREATED)
-    return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "status": "success",
+            "message": "Signup successful! OTP sent to your mobile.",
+            "user_id": user.id,
+            "mobile": user.mobile,
+            "otp": otp
+        }, status=status.HTTP_201_CREATED)
+
+    # Return validation errors
+    return Response({
+        "status": "error",
+        "errors": serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -51,7 +61,7 @@ def signup(request):
 def verify_otp(request):
     serializer = VerifyOtpSerializer(data = request.data)
     if serializer.is_valid():
-        return Response({"Message" :"otp verified successfully, you can now log in"}, status = status.HTTP_200_OK)
+        return Response({"status": "success","Message" :"otp verified successfully, you can now log in"}, status = status.HTTP_200_OK)
     return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
 def set_tokens_as_cookies(response, user):
@@ -101,7 +111,7 @@ def login(request):
         )
         print("Login OTP:", otp)
 
-        return Response({"Message" : "Otp sent to your mobile"}, status = status.HTTP_200_OK)
+        return Response({"status": "success","Message" : "Otp sent to your mobile"}, status = status.HTTP_200_OK)
     
     return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
@@ -112,7 +122,7 @@ def verify_login_otp(request):
     serializer = VerifyLoginOtpSerializer(data = request.data)
     if serializer.is_valid():
         user = serializer.validated_data["user"]
-        response = Response({"Message" : "Login Successful"}, status = status.HTTP_200_OK)
+        response = Response({"status": "success","Message" : "Login Successful"}, status = status.HTTP_200_OK)
         return set_tokens_as_cookies(response, user)
     
     return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
@@ -195,6 +205,7 @@ def get_all_users(request):
     
     serializer = UserListSerializer(users, many=True)
     return Response({
+        "status": "success",
         'message': 'Users retrieved successfully',
         'users': serializer.data,
         'total_count': users.count()
@@ -213,6 +224,7 @@ def get_current_user(request):
     serializer = CurrentUserSerializer(user)
     
     return Response({
+        "status": "success",
         'message': 'Current user information retrieved successfully',
         'user': serializer.data
     }, status=status.HTTP_200_OK)
@@ -226,6 +238,7 @@ def logout(request):
     API to logout user by clearing cookies
     """
     response = Response({
+        "status": "success",
         'message': 'Logged out successfully'
     }, status=status.HTTP_200_OK)
     
@@ -241,7 +254,12 @@ def logout(request):
 def service_list(request):
     services = Service.objects.all()
     serializer = ServiceSerializer(services, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        "status": "success",
+        "message": "Services fetched successfully",
+        "total": services.count(),
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -250,7 +268,7 @@ def create_service(request):
     serializer = ServiceSerializer(data=request.data)
     if serializer.is_valid():
         service = serializer.create(serializer.validated_data)
-        return Response({"message": "Service Created Successfully", "data": ServiceSerializer(service).data}, status=status.HTTP_201_CREATED)
+        return Response({"status": "success","message": "Service Created Successfully", "data": ServiceSerializer(service).data}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -260,12 +278,12 @@ def update_service(request, service_id):
     try:
         service = Service.objects.get(pk=service_id)
     except Service.DoesNotExist:
-        return Response({"error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
     serializer = ServiceSerializer(service, data=request.data, partial=True)
     if serializer.is_valid():
         service = serializer.update(service, serializer.validated_data)
-        return Response({"message": "Service Updated Successfully", "data": ServiceSerializer(service).data}, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "success","message": "Service Updated Successfully", "data": ServiceSerializer(service).data}, status=status.HTTP_200_OK)
+    return Response({"status": "error", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['DELETE'])
@@ -274,9 +292,9 @@ def delete_service(request, service_id):
     try:
         service = Service.objects.get(pk=service_id)
         service.delete()
-        return Response({"message": "Service deleted successfully"}, status=status.HTTP_200_OK)
+        return Response({"status": "success","message": "Service deleted successfully"}, status=status.HTTP_200_OK)
     except Service.DoesNotExist:
-        return Response({"error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])
@@ -284,9 +302,13 @@ def service_detail(request, service_id):
     try:
         service = Service.objects.get(pk=service_id)
     except Service.DoesNotExist:
-        return Response({"error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error","error": "Service not found"}, status=status.HTTP_404_NOT_FOUND)
     serializer = ServiceSerializer(service)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        "status": "success",
+        "message": "Service details fetched successfully",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
 
 
 # -------------------- Feature APIs --------------------
@@ -295,7 +317,12 @@ def service_detail(request, service_id):
 def feature_list(request):
     features = Feature.objects.all()
     serializer = FeatureSerializer(features, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        "status": "success",
+        "message": "Features fetched successfully",
+        "total": features.count(),
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -304,7 +331,7 @@ def add_feature(request):
     serializer = FeatureSerializer(data=request.data)
     if serializer.is_valid():
         feature = serializer.create(serializer.validated_data)
-        return Response({"message": "Feature added Successfully", "data": FeatureSerializer(feature).data}, status=status.HTTP_201_CREATED)
+        return Response({"status": "success","message": "Feature added Successfully", "data": FeatureSerializer(feature).data}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -314,12 +341,12 @@ def update_feature(request, feature_id):
     try:
         feature = Feature.objects.get(pk=feature_id)
     except Feature.DoesNotExist:
-        return Response({"error": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
     serializer = FeatureSerializer(feature, data=request.data, partial=True)
     if serializer.is_valid():
         feature = serializer.update(feature, serializer.validated_data)
-        return Response({"message": "Feature Updated Successfully", "data": FeatureSerializer(feature).data}, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "success","message": "Feature Updated Successfully", "data": FeatureSerializer(feature).data}, status=status.HTTP_200_OK)
+    return Response({"status": "error", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['DELETE'])
@@ -328,9 +355,9 @@ def delete_feature(request, feature_id):
     try:
         feature = Feature.objects.get(pk=feature_id)
         feature.delete()
-        return Response({"message": "Feature deleted Successfully"}, status=status.HTTP_200_OK)
+        return Response({"status": "success","message": "Feature deleted Successfully"}, status=status.HTTP_200_OK)
     except Feature.DoesNotExist:
-        return Response({"error": "Feature Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])
@@ -338,9 +365,13 @@ def feature_detail(request, feature_id):
     try:
         feature = Feature.objects.get(pk=feature_id)
     except Feature.DoesNotExist:
-        return Response({"error": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error","error": "Feature not found"}, status=status.HTTP_404_NOT_FOUND)
     serializer = FeatureSerializer(feature)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        "status": "success",
+        "message": "Feature details fetched successfully",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -386,7 +417,7 @@ def update_hostel_by_id(request, hostel_id):
     try:
         hostel = Hostel.objects.get(id=hostel_id)
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status":"error","error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = HostelSerializer(hostel, data=request.data, partial=True)
     if serializer.is_valid():
@@ -424,7 +455,7 @@ def delete_hostel_by_id(request, hostel_id):
         hostel.delete()
         return Response({"status": "success", "message": "Hostel deleted successfully"}, status=status.HTTP_200_OK)
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['PUT'])
 @RoleBasedAuthorizationMiddleware.require_roles(['admin'])
@@ -436,7 +467,7 @@ def approve_or_reject_hostel(request, hostel_id):
     try:
         hostel = Hostel.objects.get(id=hostel_id)
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
 
     action = request.data.get('action')
 
@@ -463,7 +494,7 @@ def approve_or_reject_hostel(request, hostel_id):
 
     else:
         return Response(
-            {"error": "Invalid action. Use 'approve' or 'reject'."},
+            {"status": "error", "message": "Invalid action. Use 'approve' or 'reject'."},
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -477,11 +508,11 @@ def change_status_by_id(request, hostel_id):
     try:
         hostel = Hostel.objects.get(id=hostel_id)
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
 
     status_value = request.data.get('status')
     if status_value is None:
-        return Response({"error": "Status field (true/false) is required"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": "Status field (true/false) is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     hostel.is_active = bool(status_value)
     hostel.save()
@@ -538,7 +569,7 @@ def upload_hostel_image(request, hostel_id):
     try:
         hostel = Hostel.objects.get(id=hostel_id)
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = HostelPhotoSerializer(data=request.data)
     if serializer.is_valid():
@@ -560,7 +591,7 @@ def upload_hostel_video(request, hostel_id):
     try:
         hostel = Hostel.objects.get(id=hostel_id)
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": "error", "message": "Hostel not found"}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = HostelPhotoSerializer(data=request.data)
     if serializer.is_valid():
@@ -572,3 +603,63 @@ def upload_hostel_video(request, hostel_id):
         }, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@RoleBasedAuthorizationMiddleware.require_roles(['owner'])
+def get_owner_hostels(request):
+    """
+    API for owners to get all hostels they have created.
+    Each owner will only see their own hostels.
+    """
+    user = getattr(request, 'user', None)
+    if not user or not getattr(user, 'is_authenticated', False):
+        return Response(
+            {"error" : "Authentication required"},
+            status = status.HTTP_401_UNAUTHORIZED
+        )
+    hostels = Hostel.objects.filter(user = user).order_by('-created_at')
+    if not hostels.exists():
+        return Response(
+            {"message" : "You have not created any hostels yet"},
+            status = status.HTTP_200_OK
+        )
+    serializer = HostelSerializer(hostels, many = True)
+    return Response({
+        "status" : "Success",
+        "message" : "Hostels retrieved successfully",
+        "total_hostels" : hostels.count(),
+        "data" : serializer.data
+    }, status = status.HTTP_200_OK)
+
+@api_view(['GET'])
+@RoleBasedAuthorizationMiddleware.require_roles(['owner'])
+def get_owner_hostel_byid(request, hostel_id):
+    """
+    API for an owner to get details of a specific hostel they own.
+    Only the logged-in owner can access their own hostel details.
+    Other owners or admins cannot access this.
+    """
+    user = getattr(request, 'user', None)
+    if not user or not getattr(user, 'is_authenticated', False):
+        return Response(
+            {"error" : "Authentication required"},
+            status = status.HTTP_401_UNAUTHORIZED
+        )
+    try:
+        hostel = Hostel.objects.get(id = hostel_id)
+    except Hostel.DoesNotExist:
+        return Response(
+            {"error" : "Hostel Not Found"},
+            status = status.HTTP_404_NOT_FOUND
+        )
+    if hostel.user != user:
+        return Response(
+            {"error" : "You do not have permission to view this Hostel Detail"},
+            status = status.HTTP_403_FORBIDDEN
+        )
+    serializer = HostelSerializer(hostel)
+    return Response({
+        "status" : "Success",
+        "message" : "Hostel details retrieved successfully",
+        "data" : serializer.data
+    }, status = status.HTTP_200_OK)    

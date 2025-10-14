@@ -6,28 +6,47 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class SignupSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length = 100)
+    username = serializers.CharField(max_length=100)
     email = serializers.EmailField()
-    mobile = serializers.CharField(max_length = 15)
-    role = serializers.ChoiceField(choices = ['user','owner','admin', 'agent'])
+    mobile = serializers.CharField(max_length=15)
+    role = serializers.ChoiceField(choices=['user', 'owner', 'admin', 'agent'])
 
-    def validate_mobile(self,value):
+    def validate_mobile(self, value):
         pattern = r'^[6-9]\d{9}$'
-
-        if not re.match(pattern,value):
-            raise serializers.ValidationError("Enter a valid Indian Mobile number")
+        if not re.match(pattern, value):
+            raise serializers.ValidationError("Enter a valid Indian mobile number")
         return value
-    
-    def create(self,validated_data):
-        otp = "123456"
+
+    def validate(self, data):
+        """
+        Check if username, email, or mobile already exist.
+        """
+        username = data.get('username')
+        email = data.get('email')
+        mobile = data.get('mobile')
+
+        errors = {}
+        if CustomUser.objects.filter(username=username).exists():
+            errors['username'] = "This username is already taken."
+        if CustomUser.objects.filter(email=email).exists():
+            errors['email'] = "This email is already registered."
+        if CustomUser.objects.filter(mobile=mobile).exists():
+            errors['mobile'] = "This mobile number is already registered."
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
+
+    def create(self, validated_data):
+        otp = "123456"  # You can replace with random OTP generation
         user = CustomUser.objects.create(
-            username = validated_data['username'],
-            email = validated_data['email'],
-            mobile = validated_data['mobile'],
-            role = validated_data['role'],
-            
+            username=validated_data['username'],
+            email=validated_data['email'],
+            mobile=validated_data['mobile'],
+            role=validated_data['role'],
         )
-        print("generated otp", otp)
+        print("Generated OTP:", otp)
         return user, otp
     
 

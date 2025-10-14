@@ -6,7 +6,7 @@ from .views import (
     service_list,create_service,service_detail,update_service,delete_service,
     feature_list,add_feature,feature_detail,update_feature,delete_feature,get_all_services_with_features,
     create_hostel,update_hostel_by_id,get_all_hostels,delete_hostel_by_id,approve_or_reject_hostel,change_status_by_id,
-    get_hostel_by_id,get_all_approved_hostels,upload_hostel_image,upload_hostel_video,
+    get_hostel_by_id,get_all_approved_hostels,upload_hostel_image,upload_hostel_video,get_owner_hostel_byid,get_owner_hostels,
 )
 
 urlpatterns = [
@@ -50,5 +50,8 @@ urlpatterns = [
     # -------------------- Hostel Media Upload --------------------
     path('upload-image/<int:hostel_id>/', upload_hostel_image, name='upload_hostel_image'), # POST (owner)
     path('upload-video/<int:hostel_id>/', upload_hostel_video, name='upload_hostel_video'), # POST (owner)
+
+    path("get-owner-hostel-byid/<int:hostel_id>/", get_owner_hostel_byid, name="get_owner_hostel_byid"), # GET (owner)
+    path("get-owner-hostels/", get_owner_hostels, name="get_owner_hostels"), # GET (owner)
 
 ]
