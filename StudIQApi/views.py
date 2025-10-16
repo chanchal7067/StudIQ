@@ -94,7 +94,6 @@ def set_tokens_as_cookies(response, user):
 
     return response
 
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @csrf_exempt
